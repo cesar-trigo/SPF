@@ -1,6 +1,7 @@
 <h2>Productos</h2>
 <hr>
 <h3>Categoría</h3>
+<div class="container">
 <ul name="" id="">
     <li><a href="/products">Todos</a></li>
     {{#each categories}}
@@ -9,14 +10,15 @@
 </ul>
 <input type="text" value="{{cart._id}}" hidden id="cart">
 
-<div>
+
+    <div>
     <select id="sortSelect">
         <option selected disabled>Ordenar</option>
         <option value="asc">Precio: Menor a Mayor</option>
         <option value="desc">Precio: Mayor a Menor</option>
     </select>
+    </div>
 </div>
-
 <ul id="prod">
     {{#each payload}}
     <li>
@@ -25,9 +27,11 @@
     </li>
     {{/each}}
 </ul>
+
 <br><br>
 
-<a href="/products?page=1">Pág. 1</a>
+<div class="container">
+    <a href="/products?page=1">Pág. 1</a>
 {{#if hasPrevPage}}
 <a href="{{prevLink}}">Ant.</a>
 {{/if}}
@@ -39,5 +43,6 @@
 <a href="/products?page={{totalPages}}">Última Pág.</a>
 <h3> Pagina {{page}} / {{totalPages}}</h3>
 <a href="/carts/{{cart._id}}">Ver carrito</a>
+</div>
 
 <script src="/assets/js/products.js"></script>
