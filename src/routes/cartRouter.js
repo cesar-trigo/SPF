@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
 
         res.status(200).json(cart);
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` });
+        res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` });
     }
 })
 
@@ -25,7 +25,7 @@ router.get('/:cid', async (req, res) => {
 
         if (!isValidObjectId(cid)) {
             return res.status(400).json({
-                error: `Ingrese un ID de MongoDB válido`,
+                error: `Enter a valid MongoDB ID`,
             });
         }
 
@@ -33,10 +33,10 @@ router.get('/:cid', async (req, res) => {
         if (cart) {
             res.status(200).json(cart);
         } else {
-            return res.status(404).json({ error: `No existe un carrito con el ID: ${cid}` });
+            return res.status(404).json({ error: `No cart exists with the ID: ${cid}` });
         }
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` });
+        res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` });
     }
 })
 
@@ -44,9 +44,9 @@ router.post('/', async (req, res) => {
     try {
         res.setHeader('Content-Type', 'application/json')
         const newCart = await cartManager.createCart();
-        res.status(200).json(`Carrito creado: ${newCart}`)
+        res.status(200).json(`Cart created: ${newCart}`)
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` });
+        res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` });
     }
 })
 
@@ -57,26 +57,26 @@ router.post('/:cid/products/:pid', async (req, res) => {
 
     if (!isValidObjectId(cid) || !isValidObjectId(pid)) {
         return res.status(400).json({
-            error: `Ingrese un ID de MongoDB válido`,
+            error: `Enter a valid MongoDB ID`,
         });
     }
 
     let productExists = await productManager.getProductsBy({ _id: pid });
     if (!productExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(400).json({ error: `No existe un producto con el ID: ${pid}` })
+        return res.status(400).json({ error: `No product exists with the ID: ${pid}` })
     }
 
     let cartExists = await cartManager.getCartsBy({ _id: cid })
     if (!cartExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(404).json({ error: `No existe un carrito con el ID: ${cid}` })
+        return res.status(404).json({ error: `No cart exists with the ID: ${cid}` })
     }
     try {
-        let resultado = await cartManager.addProductToCart(cid, pid);
-        res.status(200).json({ success: true, message: 'Producto agregado exitosamente', resultado })
+        let result = await cartManager.addProductToCart(cid, pid);
+        res.status(200).json({ success: true, message: 'Product added successfully', result })
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` });
+        res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` });
     }
 })
 
@@ -86,21 +86,21 @@ router.put('/:cid', async (req, res) => {
     let products = req.body;
     if (!isValidObjectId(cid)) {
         return res.status(400).json({
-            error: `Ingrese un ID de MongoDB válido`,
+            error: `Enter a valid MongoDB ID`,
         });
     }
     
     let cartExists = await cartManager.getCartsBy({ _id: cid })
     if (!cartExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(404).json({ error: `No existe un carrito con el ID: ${cid}` })
+        return res.status(404).json({ error: `No cart exists with the ID: ${cid}` })
     }
 
     try {
         const newCart = await cartManager.updateCart(cid, products);
         return res.status(200).json(newCart);
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` });
+        res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` });
     }
 })
 
@@ -111,28 +111,28 @@ router.put('/:cid/products/:pid', async (req, res) => {
 
     if (!isValidObjectId(cid) || !isValidObjectId(pid)) {
         return res.status(400).json({
-            error: `Ingrese un ID de MongoDB válido`,
+            error: `Enter a valid MongoDB ID`,
         });
     }
 
     let productExists = await productManager.getProductsBy({ _id: pid });
     if (!productExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(400).json({ error: `No existe un producto con el ID: ${pid}` })
+        return res.status(400).json({ error: `No product exists with the ID: ${pid}` })
     }
 
 
     let cartExists = await cartManager.getCartsBy({ _id: cid })
     if (!cartExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(404).json({ error: `No existe un carrito con el ID: ${cid}` })
+        return res.status(404).json({ error: `No cart exists with the ID: ${cid}` })
     }
 
     try {
         const result = await cartManager.updateProductQ(cid, pid, quantity);
         return res.status(200).json(result);
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` })
+        res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` })
 
     }
 })
@@ -143,20 +143,20 @@ router.delete('/:cid', async (req, res) => {
 
     if (!isValidObjectId(cid)) {
         return res.status(400).json({
-            error: `Ingrese un ID de MongoDB válido`,
+            error: `Enter a valid MongoDB ID`,
         });
     }
 
     let cartExists = await cartManager.getCartsBy({ _id: cid })
     if (!cartExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(404).json({ error: `No existe un carrito con el ID: ${cid}` })
+        return res.status(404).json({ error: `No cart exists with the ID: ${cid}` })
     }
 
     try {
-        let carritoEliminado = await cartManager.deleteAllProductsFromCart(cid)
-        if (carritoEliminado) {
-            res.status(200).json({ message: 'All products removed from cart', carritoEliminado });
+        let cartDeleted = await cartManager.deleteAllProductsFromCart(cid)
+        if (cartDeleted) {
+            res.status(200).json({ message: 'All products removed from cart', cartDeleted });
         } else {
             res.status(404).json({ message: 'Cart not found' });
         }
@@ -164,8 +164,8 @@ router.delete('/:cid', async (req, res) => {
         res.setHeader('Content-Type', 'application/json');
         return res.status(500).json(
             {
-                error: `Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`,
-                detalle: `${error.message}`
+                error: `Unexpected server error - Try again later, or contact your administrator`,
+                detail: `${error.message}`
             }
         )
     }
@@ -177,20 +177,20 @@ router.delete('/:cid/products/:pid', async (req, res) => {
 
     if (!isValidObjectId(cid) || !isValidObjectId(pid)) {
         return res.status(400).json({
-            error: `Ingrese un ID de MongoDB válido`,
+            error: `Enter a valid MongoDB ID`,
         });
     }
 
     let productExists = await ProductManager.getProductsBy({ _id: pid });
     if (!productExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(400).json({ error: `No existe un producto con el ID: ${pid}` })
+        return res.status(400).json({ error: `No product exists with the ID: ${pid}` })
     }
 
     let cartExists = await cartManager.getCartsBy({ _id: cid })
     if (!cartExists) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(404).json({ error: `No existe un carrito con el ID: ${cid}` })
+        return res.status(404).json({ error: `No product exists with the ID: ${cid}` })
     }
 
 

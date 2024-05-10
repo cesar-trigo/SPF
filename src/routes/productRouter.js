@@ -1,6 +1,3 @@
-// import path from 'path';
-// import __dirname from "../utils.js";
-// const rutaProducto = path.join(__dirname, 'data', 'productos.json');
 import { isValidObjectId } from 'mongoose';
 import { Router } from 'express';
 import { io } from "../app.js";
@@ -9,90 +6,70 @@ const productManager = new ProductManager();
 export const router = Router();
 
 
+const getProducts = async ({baseUrl, page = 1, limit = 5, sort, ...searchQuery }) => {
+    const options = {
+        page: Number(page),
+        limit: Number(limit),
+        lean: true,
+    };
+
+    if (sort === "asc" || sort === "desc") {
+        options.sort = { price: sort === "asc" ? 1 : -1 };
+    }
+
+    const products = await productManager.getProductsPaginate(
+        searchQuery,
+        options,
+    );
+    const links = buildLinks(baseUrl, sort, products);
+
+    const requestedPage = Number(page);
+    if (isNaN(requestedPage) || requestedPage < 1) {
+        return res
+            .status(404)
+            .json({ error: "La página solicitada está fuera de rango" });
+    }
+
+    if (requestedPage > products.totalPages) {
+        return res
+            .status(404)
+            .json({ error: "La página solicitada está fuera de rango" });
+    }
+
+    return {
+        status: "success",
+        payload: products.docs,
+        totalPages: products.totalPages,
+        page: requestedPage,
+        hasPrevPage: products.hasPrevPage,
+        hasNextPage: products.hasNextPage,
+        ...links,
+    };
+};
+
+const buildLinks = (baseUrl, sort, products) => {
+    const { prevPage, nextPage } = products;
+    const sortParam = sort ? `&sort=${sort}` : "";
+
+    return {
+        prevPage: prevPage ? parseInt(prevPage) : null,
+        nextPage: nextPage ? parseInt(nextPage) : null,
+        prevLink: prevPage
+            ? `${baseUrl}?page=${prevPage}${sortParam}`
+            : null,
+        nextLink: nextPage
+            ? `${baseUrl}?page=${nextPage}${sortParam}`
+            : null,
+    };
+};
+
 router.get("/", async (req, res) => {
     try {
-        const { page = 1, limit = 10, sort } = req.query;
-
-        const options = {
-            page: Number(page),
-            limit: Number(limit),
-            lean: true,
-        };
-
-        const searchQuery = {};
-
-        if (req.query.category) {
-            searchQuery.category = req.query.category;
-        }
-
-        if (req.query.title) {
-            searchQuery.title = { $regex: req.query.title, $options: "i" };
-        }
-
-        if (req.query.stock) {
-            const stockNumber = parseInt(req.query.stock);
-            if (!isNaN(stockNumber)) {
-                searchQuery.stock = stockNumber;
-            }
-        }
-
-        if (sort === "asc" || sort === "desc") {
-            options.sort = { price: sort === "asc" ? 1 : -1 };
-        }
-
-        const buildLinks = (products) => {
-            const { prevPage, nextPage } = products;
-            const baseUrl = req.originalUrl.split("?")[0];
-            const sortParam = sort ? `&sort=${sort}` : "";
-
-            const prevLink = prevPage
-                ? `${baseUrl}?page=${prevPage}${sortParam}`
-                : null;
-            const nextLink = nextPage
-                ? `${baseUrl}?page=${nextPage}${sortParam}`
-                : null;
-
-            return {
-                prevPage: prevPage ? parseInt(prevPage) : null,
-                nextPage: nextPage ? parseInt(nextPage) : null,
-                prevLink,
-                nextLink,
-            };
-        };
-
-        const products = await productManager.getProductsPaginate(
-            searchQuery,
-            options
-        );
-        const { prevPage, nextPage, prevLink, nextLink } = buildLinks(products);
-
-        let requestedPage = parseInt(page);
-        if (isNaN(requestedPage) || requestedPage < 1) {
-            requestedPage = 1;
-        }
-
-        if (requestedPage > products.totalPages) {
-            return res
-                .status(404)
-                .json({ error: "La página solicitada está fuera de rango" });
-        }
-
-        const response = {
-            status: "success",
-            payload: products.docs,
-            totalPages: products.totalPages,
-            page: parseInt(page),
-            hasPrevPage: products.hasPrevPage,
-            hasNextPage: products.hasNextPage,
-            prevPage,
-            nextPage,
-            prevLink,
-            nextLink,
-        };
-
-        return res.status(200).send(response);
+        const baseUrl = req.originalUrl.split("?")[0];
+        const { page, limit, sort, ...searchQuery } = req.query;
+        const products = await getProducts({ baseUrl, page, limit, sort, ...searchQuery });
+        res.status(200).json(products);
     } catch (error) {
-        console.log(error);
         res.status(500).json({ error: "Error interno del servidor" });
     }
 });
@@ -101,7 +78,7 @@ router.get("/:pid", async (req, res) => {
     let id = req.params.pid;
     if (!isValidObjectId(id)) {
         res.setHeader('Content-Type', 'application/json');
-        return res.status(400).json({ error: `Ingrese un ID válido de MONGODB` })
+        return res.status(400).json({ error: `Enter a valid MONGODB ID` })
     }
     try {
         res.setHeader('Content-Type', 'application/json');
@@ -110,64 +87,53 @@ router.get("/:pid", async (req, res) => {
         if (product) {
             res.status(200).json(product);
         } else {
-            return res.status(404).json({ error: `No existe un producto con el ID: ${id}` });
+            return res.status(404).json({ error: `No product exists with the ID: ${id}` });
         }
 
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` });
+        res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` });
     }
 });
 
 router.post("/", async (req, res) => {
-    let nuevoProducto
     try {
         const { title, description, price, thumbnail, code, stock, category } = req.body;
 
         if (!title || !description || !price || !thumbnail || !code || !stock || !category) {
-            return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+            return res.status(400).json({ error: 'All fields are required' });
         }
+
         if (typeof price !== 'number' || typeof stock !== 'number') {
-            return res.status(400).json({ error: 'El precio y el stock deben ser números' })
+            return res.status(400).json({ error: 'Price and stock must be numbers' });
         }
 
-        // const products = await productManager.getProducts();
-        // const codeRepeat = products.some(product => product.code === code);
+        const productExists = await productManager.getProductsBy({ code });
 
-        let codeRepeat
-        try {
-            codeRepeat = await productManager.getProductsBy({ code })
-        } catch (error) {
-            res.setHeader('Content-Type', 'application/json');
-            return res.status(500).json(
-                {
-                    error: `Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`,
-                    detalle: `${error.message}`
-                }
-            )
+        if (productExists) {
+            return res.status(400).json({ error: `Error, the code ${code} is repeating` });
         }
 
-        if (codeRepeat) {
-            return res.status(400).json({ error: `Error, el código ${code} se está repitiendo` });
-        }
+        const newProduct = await productManager.addProduct({
+            title,
+            description,
+            price,
+            thumbnail,
+            code,
+            stock,
+            category,
+        });
 
-        try {
-            nuevoProducto = await productManager.addProduct({ title, description, price, thumbnail, code, stock, category })
-        } catch (error) {
-            res.setHeader('Content-Type', 'application/json');
-            return res.status(500).json(
-                {
-                    error: `Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`,
-                    detalle: `${error.message}`
-                }
-            )
-        }
+        const products = await productManager.getProducts();
+
+        io.emit("newProduct", products);
+
+        res.status(201).json(newProduct);
     } catch (error) {
-        res.status(500).json({ error: `Error inesperado en el servidor`, detalle: `${error.message}` });
+        res.status(500).json({
+            error: `Unexpected server error`,
+            detalle: `${error.message}`
+        });
     }
-    const productList = await productManager.getProducts();
-    io.emit("nuevoProducto", productList)
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(201).json(nuevoProducto);
 })
 
 router.put("/:pid", async (req, res) => {
@@ -177,29 +143,8 @@ router.put("/:pid", async (req, res) => {
 
         if (!isValidObjectId(id)) {
             res.setHeader('Content-Type', 'application/json');
-            return res.status(400).json({ error: `Ingrese un ID válido de MONGODB` })
+            return res.status(400).json({ error: "Enter a valid MONGODB ID" })
         }
-
-        // const currentProduct = await productManager.getProductsBy(id);
-
-        // if (!('stock' in req.body)) {
-        //     stock = currentProduct.stock;
-        // }
-        // if (!('price' in req.body)) {
-        //     price = currentProduct.price;
-        // }
-        // if (!('category' in req.body)) {
-        //     category = currentProduct.category;
-        // }
-        // if (!('thumbnail' in req.body)) {
-        //     thumbnail = currentProduct.thumbnail;
-        // }
-        // if (!('title' in req.body)) {
-        //     title = currentProduct.title;
-        // }
-        // if (!('description' in req.body)) {
-        //     description = currentProduct.description;
-        // }
 
         res.setHeader('Content-Type', 'application/json');
         let stock, price, category, thumbnail, title, description
@@ -216,7 +161,7 @@ router.put("/:pid", async (req, res) => {
                 exist = await productManager.getProductsBy({ code: updateData.code })
                 if (exist) {
                     res.setHeader('Content-Type', 'application/json');
-                    return res.status(400).json({ error: `Ya existe otro producto con codigo ${updateData.code}` })
+                    return res.status(400).json({ error: `Another product with code ${updateData.code} already exists` })
                 }
             } catch (error) {
                 res.setHeader('Content-Type', 'application/json');
@@ -229,20 +174,20 @@ router.put("/:pid", async (req, res) => {
         }
 
         if ((stock !== undefined && isNaN(stock)) || (price !== undefined && isNaN(price))) {
-            return res.status(400).json({ error: "Stock y precio deben ser números" });
+            return res.status(400).json({ error: "Stock and price must be numbers" });
         }
 
         try {
             let productoModificado = await productManager.updateProduct(id, updateData);
-            return res.status(200).json(`El producto ${id} se ha modificado: ${productoModificado}`);
+            return res.status(200).json(`product ${id} has been modified: ${productoModificado}`);
         } catch (error) {
-            res.status(300).json({ error: `Error al modificar el producto`, detalle: `${error.message}` });
+            res.status(300).json({ error: `Error modifying the product` });
         }
     } catch (error) {
         res.setHeader('Content-Type', 'application/json');
         return res.status(500).json(
             {
-                error: `Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`,
+                error: `Unexpected server error`,
                 detalle: `${error.message}`
             }
         )
@@ -250,45 +195,29 @@ router.put("/:pid", async (req, res) => {
 });
 
 router.delete("/:pid", async (req, res) => {
-    let productoEliminado
-    let id = req.params.pid;
+    const productId = req.params.productId;
 
-    if (!isValidObjectId(id)) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(400).json({ error: `Ingrese un ID válido de MONGODB` })
+    if (!isValidObjectId(productId)) {
+        return res.status(400).json({ error: "Enter a valid MongoDB ID" });
     }
 
-    const product = await productManager.getProductsBy({ _id: id });
-    if (product) {
-        res.status(200).json(product);
-    } else {
-        return res.status(404).json({ error: `No existe un producto con el ID: ${id}` });
+    const product = await productManager.getProductsBy({ _id: productId });
+    if (!product) {
+        return res.status(404).json({ error: `No product found with ID: ${productId}` });
     }
+
     try {
-        productoEliminado = await productManager.deleteProduct(id);
-        if (productoEliminado.deletedCount > 0) {
-            res.setHeader('Content-Type', 'application/json');
-            return res.status(200).json({ payload: `El producto con id ${id} fue eliminado` });
+        const result = await productManager.deleteProduct(productId);
+        if (result.deletedCount > 0) {
+            return res.status(200).json({ payload: `Product with id ${productId} has been deleted` });
         } else {
-            res.setHeader('Content-Type', 'application/json');
-            return res.status(400).json({ error: `No existe ningun producto con el id ${id}` })
+            return res.status(400).json({ error: `No product found with id ${productId}` });
         }
-
     } catch (error) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(500).json(
-            {
-                error: `Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`,
-                detalle: `${error.message}`
-            }
-        )
-
+        return res.status(500).json({
+            error: "Unexpected server error",
+            detail: error.message,
+        });
     }
-
-    let products = productManager.getProducts();
-    io.emit("productoEliminado", products);
-
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json(productoEliminado);
-
 })
+
