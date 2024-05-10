@@ -1,0 +1,12 @@
+<h2>Carrito {{cart._id}}</h2>
+<hr>
+<ul id="cart">
+    {{#each cart.products}}
+    <li>
+        {{product.title}} , {{product.category}} $<strong> ${{product.price}} </strong> | Llevas {{quantity}}
+    </li>
+    <hr>
+    {{/each}}
+</ul>
+<br><br>
+<a href="/products"> Seguir comprando </a>
