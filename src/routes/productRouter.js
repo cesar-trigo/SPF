@@ -123,9 +123,7 @@ router.post("/", async (req, res) => {
             category,
         });
 
-        const products = await productManager.getProducts();
-
-        io.emit("newProduct", products);
+        io.emit("newProduct", newProduct);
 
         res.status(201).json(newProduct);
     } catch (error) {
@@ -195,7 +193,7 @@ router.put("/:pid", async (req, res) => {
 });
 
 router.delete("/:pid", async (req, res) => {
-    const productId = req.params.productId;
+    const productId = req.params.pid;
 
     if (!isValidObjectId(productId)) {
         return res.status(400).json({ error: "Enter a valid MongoDB ID" });
@@ -208,7 +206,9 @@ router.delete("/:pid", async (req, res) => {
 
     try {
         const result = await productManager.deleteProduct(productId);
+        const products = await productManager.getProducts();
         if (result.deletedCount > 0) {
+            io.emit("deleteProduct", products);
             return res.status(200).json({ payload: `Product with id ${productId} has been deleted` });
         } else {
             return res.status(400).json({ error: `No product found with id ${productId}` });

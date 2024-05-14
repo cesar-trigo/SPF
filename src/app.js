@@ -11,7 +11,7 @@ import { messageModelo } from "./dao/models/messageModelo.js";
 
 
 
-const PORT = 8000;
+const PORT = 8080;
 const app = express();
 
 app.engine('handlebars', engine());
