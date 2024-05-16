@@ -8,6 +8,9 @@ import { router as vistasRouter } from './routes/vistas.router.js';
 import { router as cartRouter } from './routes/cartRouter.js';
 import { router as productRouter } from './routes/productRouter.js';
 import { messageModelo } from "./dao/models/messageModelo.js";
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+import authRouter from './routes/authRouter.js';
 
 
 
@@ -20,9 +23,12 @@ app.set('views', path.join(__dirname, '/views'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(session({ secret: 'secret', resave: false, saveUninitialized: true, cookie: { secure : false }}));
 app.use(express.static(path.join(__dirname, '/public')));
 
+app.use(cookieParser("secret"));
 app.use('/', vistasRouter);
+app.use('/api/session', authRouter);
 app.use('/api/product', productRouter);
 app.use('/api/carts', cartRouter);
 
