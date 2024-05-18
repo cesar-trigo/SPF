@@ -1,3 +1,16 @@
+const socket = io();
+
+socket.on("bienvenido", userName => {
+    Swal.fire({
+        text: `Bienvenido ${userName}`,
+        toast: true,
+        position: "top-right",
+        timer: 2000, 
+        timerProgressBar: true,
+        showConfirmButton: false
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeSortSelect();
 });
@@ -16,7 +29,6 @@ const comprar = async (pid) => {
         let datos = await response.json()
     }
 }
-
 
 function initializeSortSelect() {
     const sortSelect = document.getElementById('sortSelect');

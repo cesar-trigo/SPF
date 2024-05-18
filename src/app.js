@@ -9,8 +9,9 @@ import { router as cartRouter } from './routes/cartRouter.js';
 import { router as productRouter } from './routes/productRouter.js';
 import { messageModelo } from "./dao/models/messageModelo.js";
 import session from 'express-session';
+import MongoStore from "connect-mongo";
 import cookieParser from 'cookie-parser';
-import authRouter from './routes/authRouter.js';
+/* import { router as authRouter } from './routes/authRouter.js'; */
 
 
 
@@ -23,12 +24,20 @@ app.set('views', path.join(__dirname, '/views'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(session({ secret: 'secret', resave: false, saveUninitialized: true, cookie: { secure : false }}));
+app.use(session({ 
+    store: MongoStore.create({
+        mongoUrl: 'mongodb+srv://coderh:5iaNR9LCN6MarkJg@cluster0.ufvnnqc.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Cluster0',
+        ttl: 3600
+    }),
+    secret: 'CoderCoder123',
+    resave: false,
+    saveUninitialized: true
+}));
 app.use(express.static(path.join(__dirname, '/public')));
 
-app.use(cookieParser("secret"));
+app.use(cookieParser("CoderCoder123"));
 app.use('/', vistasRouter);
-app.use('/api/session', authRouter);
+/* app.use('/api/session', authRouter); */
 app.use('/api/product', productRouter);
 app.use('/api/carts', cartRouter);
 
@@ -42,7 +51,7 @@ const server = app.listen(PORT, () => {
 
 export const io = new Server(server);
 
-io.on("connection", (socket) => { 
+/* io.on("connection", (socket) => { 
     console.log(`Se conecto el cliente ${socket.id}`)
 
     socket.on("id", async (userName) => {
@@ -64,7 +73,7 @@ io.on("connection", (socket) => {
             io.emit("userDisconnected", userName);
         }
     })
-})
+}) */
 
 const connDB = async () => {
     try {
