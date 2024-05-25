@@ -7,6 +7,7 @@ import { productsModelo } from '../dao/models/productsModelo.js';
 import UserManager from '../dao/UserManager.js';
 import { auth, admin } from '../middleware/auth.js';
 import { io } from "../app.js";
+import passport from 'passport';
 
 const cartManager = new CartManager();
 
@@ -167,7 +168,7 @@ router.get('/register', (req, res) => {
     res.status(200).render('register', {error})
 });
 
-router.post('/register', async (req, res) => {
+/* router.post('/register', async (req, res) => {
     
     try {
         const {first_name, last_name , email, password, age} = req.body
@@ -184,14 +185,14 @@ router.post('/register', async (req, res) => {
         res.redirect('/register')
     }
 });
-
+ */
 router.get('/login', (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     let {error}= req.query
     res.status(200).render('login', {error})
 });
 
-router.post('/login', async (req, res) => {
+/* router.post('/login', async (req, res) => {
     const {email, password} = req.body
 
     const user = await userManager.getUserEmail(email)
@@ -206,7 +207,7 @@ router.post('/login', async (req, res) => {
         return res.redirect('/products')
     }
     return res.redirect('/login')
-});
+}); */
 
 router.get('/logout', (req, res) => {
     req.session.destroy();
@@ -218,4 +219,21 @@ router.get('/profile', auth, (req, res) => {
     res.status(200).render('profile', {
         user: req.session.user
     })
+});
+
+router.get("/github", passport.authenticate("github", { scope: ["user:email"] }), async (req, res) => {});
+
+router.get("/callbackGithub", passport.authenticate("github", { failureRedirect: "/login" }), async (req, res) => {
+    if (!req.user) {
+        return res.redirect("/login");
+    }
+
+    req.session.user = {
+        first_name: req.user.first_name,
+        last_name: req.user.last_name,
+        age: req.user.age,
+        email: req.user.email,
+        role: req.user.role,
+    };
+    return res.redirect("/products");
 });
