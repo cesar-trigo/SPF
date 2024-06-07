@@ -8,7 +8,6 @@ import { router as vistasRouter } from "./routes/vistas.router.js";
 import { router as cartRouter } from "./routes/cartRouter.js";
 import { router as productRouter } from "./routes/productRouter.js";
 import { messageModelo } from "./dao/models/messageModelo.js";
-import session from "express-session";
 import MongoStore from "connect-mongo";
 import cookieParser from "cookie-parser";
 import { router as authRouter } from "./routes/authRouter.js";
@@ -24,23 +23,10 @@ app.set("views", path.join(__dirname, "/views"));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  session({
-    store: MongoStore.create({
-      mongoUrl:
-        "mongodb+srv://coderh:5iaNR9LCN6MarkJg@cluster0.ufvnnqc.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Cluster0",
-      ttl: 3600,
-    }),
-    secret: "CoderCoder123",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
 app.use(express.static(path.join(__dirname, "/public")));
 
 initializePassport();
 app.use(passport.initialize());
-app.use(passport.session());
 
 app.use(cookieParser("CoderCoder123"));
 app.use("/", vistasRouter);

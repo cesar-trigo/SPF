@@ -1,21 +1,56 @@
 import passport from "passport";
+import passportjwt from "passport-jwt";
 import local from "passport-local";
 import GitHubStrategy from "passport-github2";
 
 const LocalStrategy = local.Strategy;
 import { userModelo } from "../dao/models/userModelo.js";
-import { createHash, isValidPassword } from "../utils.js";
+import { SECRET, createHash, isValidPassword } from "../utils.js";
+import CartManager from "../dao/CartManagerMONGO.js";
+import UserManager from "../dao/UserManager.js";
+
+const cartManager = new CartManager();
+const userManager = new UserManager();
+
+const lookToken = req => {
+  let token = null;
+  if (req.cookies["coderCookie"]) {
+    token = req.cookies["coderCookie"];
+  }
+  return token;
+};
 
 export const initializePassport = () => {
   passport.use(
-    "register",
+    "jwt",
+    new passportjwt.Strategy(
+      {
+        jwtFromRequest: new passportjwt.ExtractJwt.fromExtractors([lookToken]),
+        secretOrKey: SECRET,
+      },
+      async (jwt_payload, done) => {
+        try {
+          const user = await userManager.getUserById(jwt_payload.id);
+          if (!user) {
+            return done(null, false);
+          }
+          return done(null, user);
+        } catch (error) {
+          done(error);
+        }
+      }
+    )
+  );
+
+  /*   passport.use(
+    "register", // nombre de estragia passport
     new LocalStrategy(
       {
-        passReqToCallback: true,
-        usernameField: "email",
+        passReqToCallback: true, // quiero pasar la request al callback
+        usernameField: "email", // se va validar con el email
       },
       async (req, username, password, done) => {
-        const { first_name, last_name, email, age } = req.body;
+        const { first_name, last_name, email, age, role } = req.body;
         try {
           const user = await userModelo.findOne({ email });
           if (user) {
@@ -26,8 +61,12 @@ export const initializePassport = () => {
               last_name,
               email,
               age,
+              role,
               password: await createHash(password),
             };
+
+            const cart = await cartManager.createCart(); // creo el carrito
+            newUser.cart = cart._id; // asigno el id del carrito
             const result = await userModelo.create(newUser);
             return done(null, result);
           }
@@ -36,7 +75,7 @@ export const initializePassport = () => {
         }
       }
     )
-  );
+  ); */
 
   passport.use(
     "login",
@@ -53,6 +92,7 @@ export const initializePassport = () => {
           if (!isValidPassword(user, password)) {
             return done(null, false);
           }
+          delete user.password;
           return done(null, user);
         } catch (error) {
           return done(error);
@@ -61,7 +101,7 @@ export const initializePassport = () => {
     )
   );
 
-  passport.serializeUser((user, done) => {
+  /* passport.serializeUser((user, done) => {
     done(null, user._id);
   });
 
@@ -99,5 +139,5 @@ export const initializePassport = () => {
         }
       }
     )
-  );
+  ); */
 };
