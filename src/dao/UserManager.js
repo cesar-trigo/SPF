@@ -11,6 +11,14 @@ export default class UserManager {
         }
     };
 
+    async getUserById(id) {
+        try {
+            return await userModelo.findOne({ _id: id }).lean();
+        } catch (error) {
+            throw error;
+        }
+    };  
+
     async registerUser(user) {
         try {
             return await userModelo.create({ ...user });
