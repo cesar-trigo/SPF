@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 
 export default __dirname;
 
-const SECRET = "CoderCoder123";
+export const SECRET = "CoderCoder123";
 export const generaHash = password =>
   crypto.createHmac("sha256", SECRET).update(password).digest("hex");
 
