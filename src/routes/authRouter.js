@@ -4,7 +4,6 @@ import { io } from "../app.js";
 import UserManager from "../dao/UserManager.js";
 import passport from "passport";
 import jwt from "jsonwebtoken";
-import { SECRET, createHash } from "../utils.js";
 import CartManager from "../dao/CartManagerMONGO.js";
 
 const userManager = new UserManager();
