@@ -5,7 +5,8 @@ import GitHubStrategy from "passport-github2";
 
 const LocalStrategy = local.Strategy;
 import { userModelo } from "../dao/models/userModelo.js";
-import { SECRET, createHash, isValidPassword } from "../utils.js";
+import { createHash, isValidPassword } from "../utils.js";
+import { config } from "./config.js";
 import CartManager from "../dao/CartManagerMONGO.js";
 import UserManager from "../dao/UserManager.js";
 
@@ -26,7 +27,7 @@ export const initializePassport = () => {
     new passportjwt.Strategy(
       {
         jwtFromRequest: new passportjwt.ExtractJwt.fromExtractors([lookToken]),
-        secretOrKey: SECRET,
+        secretOrKey: config.SECRET_KEY,
       },
       async (jwt_payload, done) => {
         try {

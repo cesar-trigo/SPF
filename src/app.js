@@ -13,8 +13,9 @@ import cookieParser from "cookie-parser";
 import { router as authRouter } from "./routes/authRouter.js";
 import { initializePassport } from "./config/passport.js";
 import passport from "passport";
+import { config } from "./config/config.js";
 
-const PORT = 8080;
+const PORT = config.PORT;
 const app = express();
 
 app.engine("handlebars", engine());
@@ -68,9 +69,7 @@ export const io = new Server(server);
 
 const connDB = async () => {
   try {
-    await mongoose.connect(
-      "mongodb+srv://coderh:5iaNR9LCN6MarkJg@cluster0.ufvnnqc.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Cluster0"
-    );
+    await mongoose.connect(config.MONGO_URL);
     console.log("Mongoose activo");
   } catch (error) {
     console.log("Error al conectar a DB", error.message);
