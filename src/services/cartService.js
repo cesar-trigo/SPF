@@ -5,15 +5,15 @@ class CartService {
     this.dao = dao;
   }
   getCarts = async () => {
-    return await this.dao.getAll();
+    return await this.dao.getCarts();
   };
 
-  getCartById = async (filtro = {}) => {
-    return await this.dao.getById(filtro);
+  getCartById = async (filter = {}) => {
+    return await this.dao.getCartById(filter);
   };
 
   createCart = async () => {
-    return await this.dao.create();
+    return await this.dao.createCart();
   };
 
   addProductToCart = async (cid, pid) => {
@@ -24,12 +24,12 @@ class CartService {
     return await this.dao.updateCart(cid, products);
   };
 
-  updateProductQ = async (cid, pid, quantity) => {
+  updateCartProductQ = async (cid, pid, quantity) => {
     return await this.dao.updateProductQ(cid, pid, quantity);
   };
 
-  deleteAllProductsFromCart = async (cid, pid) => {
-    return await this.dao.deleteAllProductsFromCart(cid, pid);
+  deleteAllProductsFromCart = async cid => {
+    return await this.dao.deleteAllProductsFromCart(cid);
   };
 
   deleteProductFromCart = async (cid, pid) => {
