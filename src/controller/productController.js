@@ -1,30 +1,35 @@
 import { isValidObjectId } from "mongoose";
+import { io } from "../app.js";
 import { productService } from "../services/productService.js";
 
-export class productController {
-  getProducts = async ({ baseUrl, page = 1, limit = 5, sort, ...searchQuery }) => {
+export class ProductController {
+  // Función estática para obtener productos con paginación
+  static getProductsFunction = async ({ baseUrl, page = 1, limit = 5, sort, ...searchQuery }) => {
+    // Configuración de opciones de paginación
     const options = {
       page: Number(page),
       limit: Number(limit),
       lean: true,
     };
 
+    // Configuración de la ordenación si se especifica
     if (sort === "asc" || sort === "desc") {
       options.sort = { price: sort === "asc" ? 1 : -1 };
     }
 
+    // Obtener productos paginados desde el gestor de productos
     const products = await productService.getProductsPaginate(searchQuery, options);
-    const links = this.buildLinks(baseUrl, sort, products);
+
+    // Construir enlaces de paginación
+    const links = ProductController.buildLinks(baseUrl, sort, products);
 
     const requestedPage = Number(page);
-    if (isNaN(requestedPage) || requestedPage < 1) {
-      return res.status(404).json({ error: "La página solicitada está fuera de rango" });
+    // Validación de la página solicitada
+    if (isNaN(requestedPage) || requestedPage < 1 || requestedPage > products.totalPages) {
+      return { error: "La página solicitada está fuera de rango" };
     }
 
-    if (requestedPage > products.totalPages) {
-      return res.status(404).json({ error: "La página solicitada está fuera de rango" });
-    }
-
+    // Retornar la respuesta con los productos y la información de paginación
     return {
       status: "success",
       payload: products.docs,
@@ -36,7 +41,8 @@ export class productController {
     };
   };
 
-  buildLinks = (baseUrl, sort, products) => {
+  // Función estática para construir los enlaces de paginación
+  static buildLinks = (baseUrl, sort, products) => {
     const { prevPage, nextPage } = products;
     const sortParam = sort ? `&sort=${sort}` : "";
 
@@ -48,27 +54,40 @@ export class productController {
     };
   };
 
+  // Función estática para manejar la solicitud de obtener productos
   static getProducts = async (req, res) => {
     try {
-      const baseUrl = req.originalUrl.split("?")[0];
-      const { page, limit, sort, ...searchQuery } = req.query;
-      const products = await this.getProducts({ baseUrl, page, limit, sort, ...searchQuery });
+      const baseUrl = req.originalUrl.split("?")[0]; // Obtener la URL base sin los parámetros de consulta
+      const { page, limit, sort, ...searchQuery } = req.query; // Obtener parámetros de consulta de la solicitud
+
+      // Llamar a la función de obtener productos con los parámetros de consulta
+      const products = await ProductController.getProductsFunction({
+        baseUrl,
+        page,
+        limit,
+        sort,
+        ...searchQuery,
+      });
       res.status(200).json(products);
     } catch (error) {
       res.status(500).json({ error: "Error interno del servidor" });
     }
   };
 
-  static getProductById = async (req, res) => {
+  // Método estático para obtener un producto por indentificador
+  static getProductsBy = async (req, res) => {
+    // Obtiene el ID del producto de los parámetros de la solicitud
     let id = req.params.pid;
+    // Verifica si el ID proporcionado es válido
     if (!isValidObjectId(id)) {
       res.setHeader("Content-Type", "application/json");
       return res.status(400).json({ error: `Enter a valid MONGODB ID` });
     }
     try {
       res.setHeader("Content-Type", "application/json");
-      const product = await productService.getProductsById({ _id: id });
-
+      // Llama al servicio para obtener el producto por indentificador
+      const product = await productService.getProductsBy({ _id: id });
+      // Si el producto existe, responde con el producto y un estado 200
       if (product) {
         res.status(200).json(product);
       } else {
@@ -79,6 +98,7 @@ export class productController {
     }
   };
 
+  // Método estático para crear un nuevo producto
   static createProduct = async (req, res) => {
     try {
       const { title, description, price, thumbnail, code, stock, category } = req.body;
@@ -97,7 +117,7 @@ export class productController {
         return res.status(400).json({ error: `Error, the code ${code} is repeating` });
       }
 
-      const newProduct = await productService.addProduct({
+      const newProduct = await productService.createProduct({
         title,
         description,
         price,
@@ -118,10 +138,13 @@ export class productController {
     }
   };
 
+  // Método estático para actualizar un producto
   static updateProduct = async (req, res) => {
+    // Obtiene el ID del producto de los parámetros de la solicitud
     let id = req.params.pid;
 
     try {
+      // Verifica si el ID proporcionado es válido
       if (!isValidObjectId(id)) {
         res.setHeader("Content-Type", "application/json");
         return res.status(400).json({ error: "Enter a valid MONGODB ID" });
@@ -129,15 +152,17 @@ export class productController {
 
       res.setHeader("Content-Type", "application/json");
       let stock, price, category, thumbnail, title, description;
+      // Extrae los datos de actualización del cuerpo de la solicitud
       let updateData = req.body;
 
+      // Si el objeto de actualización contiene un _id, se elimina
       if (updateData._id) {
         delete updateData._id;
       }
 
+      // Si el objeto de actualización contiene un código, se verifica si ya existe otro producto con ese código
       if (updateData.code) {
         let exist;
-
         try {
           exist = await productService.getProductsBy({ code: updateData.code });
           if (exist) {
@@ -159,8 +184,9 @@ export class productController {
       }
 
       try {
-        let productoModificado = await productService.updateProduct(id, updateData);
-        return res.status(200).json(`product ${id} has been modified: ${productoModificado}`);
+        // Intenta actualizar el producto llamando al servicio correspondiente
+        const productModified = await productService.updateProduct(id, updateData);
+        return res.status(200).json(productModified);
       } catch (error) {
         res.status(300).json({ error: `Error modifying the product` });
       }
@@ -173,6 +199,7 @@ export class productController {
     }
   };
 
+  // Método estático para eliminar un producto
   static deleteProduct = async (req, res) => {
     const productId = req.params.pid;
 
@@ -180,7 +207,7 @@ export class productController {
       return res.status(400).json({ error: "Enter a valid MongoDB ID" });
     }
 
-    const product = await productService.getProductsById({ _id: productId });
+    const product = await productService.getProductsBy({ _id: productId });
     if (!product) {
       return res.status(404).json({ error: `No product found with ID: ${productId}` });
     }
