@@ -1,5 +1,5 @@
+{{>nav}}
 <h2>Productos</h2>
-<a href="/logout">cerrar sesión</a>
 <hr>
 <h3>Categoría</h3>
 <div class="container">
@@ -9,7 +9,7 @@
     <li><a href="/products?category={{this}}">{{this}}</a></li>
     {{/each}}
 </ul>
-<input type="text" value="{{cart._id}}" hidden id="cart">
+<input type="text" value="{{cartUser}}" hidden id="cart">
 
 
     <div>
@@ -43,7 +43,7 @@
 {{/if}}
 <a href="/products?page={{totalPages}}">Última Pág.</a>
 <h3> Pagina {{page}} / {{totalPages}}</h3>
-<a href="/carts/{{cart._id}}">Ver carrito</a>
+<a href="/carts/{{cartUser}}">Ver carrito</a>
 </div>
 
 
