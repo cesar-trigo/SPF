@@ -1,19 +1,15 @@
-import { authService } from "../services/authService.js";
+import { cartService } from "../services/cartService.js";
+import { sessionService } from "../services/sessionsService.js";
 import { createHash } from "../utils.js";
 import { config } from "../config/config.js";
 import jwt from "jsonwebtoken";
 import { io } from "../app.js";
 
-export class AuthController {
+export class sessionController {
   static register = async (req, res) => {
-    //arreglo
     const { first_name, last_name, email, age, password } = req.body;
 
     try {
-      /*       if (!req.user) {
-        return res.redirect("/register");
-      } */
-
       const newUser = {
         first_name,
         last_name,
@@ -22,10 +18,10 @@ export class AuthController {
         password: await createHash(password),
       };
 
-      const cart = await cartManager.createCart(); // creo el carrito
+      const cart = await cartService.createCart(); // creo el carrito
       newUser.cart = cart._id; // asigno el id del carrito
 
-      const newProduct = await authService.register(newUser);
+      const newProduct = await sessionService.createUser(newUser);
       return res.redirect("/login");
     } catch (error) {
       throw error;
@@ -63,7 +59,6 @@ export class AuthController {
         photo: req.user.photo,
         age: req.user.age,
         events: req.user.events,
-        cart: req.user.cart,
         role: req.user.role,
       };
       res.cookie("coderCookie", token, { httpOnly: true });
@@ -71,6 +66,33 @@ export class AuthController {
       return res.redirect("/products"), { token, userToken };
     } catch (error) {
       throw error;
+    }
+  };
+
+  static logout = async (req, res) => {
+    res.clearCookie("coderCookie", { httpOnly: true });
+    res.redirect("/login");
+  };
+
+  static loginGithub = async (req, res) => {
+    try {
+      const tokenUser = {
+        first_name: req.user.first_name,
+        last_name: req.user.last_name,
+        email: req.user.email,
+        age: req.user.age,
+        role: req.user.role,
+        cart: req.user.cart,
+        id: req.user._id,
+      };
+
+      let token = jwt.sign(tokenUser, config.SECRET_KEY, { expiresIn: "8h" });
+
+      // Configurar la cookie
+      res.cookie("coderCookie", token, { httpOnly: true });
+      return res.redirect("/products"), { user: req.user };
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
     }
   };
 }
