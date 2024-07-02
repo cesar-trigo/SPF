@@ -1,55 +1,65 @@
 import { cartModelo } from "./models/cartModelo.js";
 
 export class CartMongoDAO {
-  async getAll() {
-    return await cartModelo.find().lean();
-  }
+  getCarts = async () => {
+    return await cartModelo.find().populate("products.product").lean();
+  };
 
-  async getById(filtro = {}) {
-    return await cartModelo.findOne(filtro).populate("products.product").lean();
-  }
+  getCartById = async (filter = {}) => {
+    return await cartModelo.findById(filter).populate("products.product");
+  };
 
-  async create() {
-    return await cartModelo.create({ products: [] });
-  }
+  createCart = async () => {
+    const cart = await cartModelo.create({ products: [] });
+    return cart.toJSON();
+  };
 
-  async addProductToCart(cid, pid) {
-    return await cartModelo.findOneAndUpdate(
-      { _id: cid },
-      { $push: { products: { product: pid, quantity: 1 } } },
-      { new: true }
+  addProductToCart = async (cart, pid) => {
+    const existingProductIndex = cart.products.findIndex(
+      product => product.product._id.toString() === pid
     );
-  }
 
-  async updateCart(cid, products) {
-    return await cartModelo.findOneAndUpdate(
-      { _id: cid },
+    existingProductIndex !== -1
+      ? cart.products[existingProductIndex].quantity++
+      : cart.products.push({ product: pid, quantity: 1 });
+
+    await cart.save();
+    return cart;
+  };
+
+  updateCart = async (cid, products) => {
+    const cart = await cartModelo.findByIdAndUpdate(
+      cid,
       { $set: { products: products } },
-      { new: true }
+      { returnDocument: "after" }
     );
-  }
 
-  async updateProductQ(cid, pid, quantity) {
-    return await cartModelo.findOneAndUpdate(
-      { _id: cid, "products.product": pid },
-      { $set: { "products.$.quantity": quantity } },
-      { new: true }
-    );
-  }
+    return cart;
+  };
 
-  async deleteAllProductsFromCart(cid, pid) {
-    return await cartModelo.findOneAndUpdate(
-      { _id: cid },
-      { $pull: { products: { product: pid } } },
-      { new: true }
-    );
-  }
+  updateProductQ = async (cid, pid, quantity) => {
+    const cart = await cartModelo
+      .findOneAndUpdate(
+        { _id: cid, "products.product": pid },
+        { $set: { "products.$.quantity": quantity } },
+        { new: true }
+      )
+      .populate("products.product");
+    return cart;
+  };
 
-  async deleteProductFromCart(cid, pid) {
-    return await cartModelo.findOneAndUpdate(
-      { _id: cid },
-      { $pull: { products: { product: pid } } },
-      { new: true }
-    );
-  }
+  deleteAllProductsFromCart = async cid => {
+    const cart = await cartModelo
+      .findOneAndUpdate({ _id: cid }, { $set: { products: [] } }, { new: true })
+      .populate("products.product");
+    return cart;
+  };
+
+  deleteProductFromCart = async (cid, pid) => {
+    const cart = await cartModelo
+      .findByIdAndUpdate(cid, { $pull: { products: { product: pid } } }, { new: true })
+      .populate("products.product");
+
+    return cart;
+  };
 }

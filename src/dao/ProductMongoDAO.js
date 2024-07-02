@@ -1,35 +1,35 @@
 import { productsModelo } from "./models/productsModelo.js";
 
 export class ProductMongoDAO {
-  async getProducts() {
+  getProducts = async () => {
     return await productsModelo.find().lean();
-  }
+  };
 
-  async getProductsPaginate(filter, options) {
-    // No es necesario usar .lean() aquí porque paginate ya devuelve documentos ligeros si lean es true en options
+  getProductsPaginate = async (filter, options) => {
     return await productsModelo.paginate(filter, options);
-  }
+  };
 
-  async getById(filter) {
+  getProductsBy = async filter => {
     return await productsModelo.findOne(filter).lean();
-  }
+  };
 
-  async getProductsBy(filter) {
-    return await productsModelo.findOne(filter).lean();
-  }
+  createProduct = async product => {
+    const newProduct = await productsModelo.create(product);
+    return newProduct.toJSON();
+  };
 
-  async addProduct(product) {
-    return await productsModelo.create(product);
-  }
-
-  async updateProduct(id, updateData) {
-    return await productsModelo.findByIdAndUpdate(id, updateData, {
+  updateProduct = async (id, product) => {
+    return await productsModelo.findByIdAndUpdate(id, product, {
       runValidators: true,
       returnDocument: "after",
     });
-  }
+  };
 
-  async deleteProduct(id) {
+  deleteProduct = async id => {
     return await productsModelo.deleteOne({ _id: id });
-  }
+  };
+
+  getCategories = async () => {
+    return await productsModelo.distinct("category");
+  };
 }
