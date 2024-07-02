@@ -1,22 +1,5 @@
+{{>nav}}
 <h2>Home Page</h2>
 <hr>
-<h3 class="container">{{user.first_name}} {{user.last_name}}</h3>
-{{#each products}}
-    <div class="container">
-        <div class="row">
-            <div class="col mx-1">
-                <div class="card" style="width: 75vw;">
-                    <div class="card-body">
-                        <h5 class="card-title">{{title}}</h5>
-                        <img src="{{thumbnails.[0]}}" alt={{title}}>
-                        <p class="card-text">{{description}}</p>
-                        <p class="card-text"><strong>$ {{price}}</strong></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-{{/each}}
-<br><br>
-<a href="./realtimeproducts">Productos</a>
-<a href="./chat">Chat</a>
+<h3 class="container"></h3>
+<div>{{user.first_name}}</div>

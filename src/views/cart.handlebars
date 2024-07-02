@@ -1,7 +1,9 @@
-<h2>Carrito {{cart._id}}</h2>
+
+{{>nav}}
+<h2>Carrito {{plainCart._id}}</h2>
 <hr>
 <ul id="cart">
-    {{#each cart.products}}
+    {{#each plainCart.products}}
     <li>
         {{product.title}} , {{product.category}} $<strong> ${{product.price}} </strong> | Llevas {{quantity}}
     </li>

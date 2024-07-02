@@ -1,6 +1,8 @@
 
+  {{>nav}}
 <div>
   <h2>Logueate</h2>
+<hr>
   <form action="/api/session/login" method="post">
   <label for="email">Email:</label>
   <input type="email" id="email" name="email" autocomplete="off" required>
@@ -10,7 +12,7 @@
 
   <input type="submit" value="Login" id="btnSubmit">
   <div>
-    <a href="/github">
+    <a href="/api/session/github">
       <button type="button" class="btn btn-primary">
         <i>Login con Github</i>
       </button>
