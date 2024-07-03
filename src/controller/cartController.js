@@ -208,19 +208,19 @@ export class CartController {
     const { cid } = req.params;
 
     if (!isValidObjectId(cid)) {
-      return res.status(400).json({ error: "ID de carrito no válido" });
+      return res.status(400).json({ error: "Invalid cart ID" });
     }
 
     try {
       const cart = await cartService.getCartById({ _id: cid });
 
       if (!cart) {
-        return res.status(404).json({ error: `Carrito con ID ${cid} no encontrado` });
+        return res.status(404).json({ error: `Cart with ID ${cid} not found` });
       }
 
       const productsInCart = cart.products;
-      let productosParaFacturar = [];
-      let productosRestantes = [];
+      let productsToBill = [];
+      let remainingProducts = [];
 
       for (let product of productsInCart) {
         const {
@@ -229,29 +229,29 @@ export class CartController {
         } = product;
 
         if (!isValidObjectId(pid)) {
-          return res.status(400).json({ error: `ID de producto no válido: ${pid}` });
+          return res.status(400).json({ error: `Invalid product ID: ${pid}` });
         }
 
         const productData = await productService.getProductsBy({ _id: pid });
 
         if (!productData) {
-          return res.status(404).json({ error: `Producto con ID ${pid} no encontrado` });
+          return res.status(404).json({ error: `Product with ID ${pid} not found` });
         }
 
         if (productData.stock < quantity) {
-          productosRestantes.push(product);
+          remainingProducts.push(product);
         } else {
           const newStock = productData.stock - quantity;
           await productService.updateProduct(pid, { stock: newStock });
 
-          productosParaFacturar.push({
+          productsToBill.push({
             product: productData,
             quantity,
           });
         }
       }
 
-      const totalAmount = productosParaFacturar.reduce(
+      const totalAmount = productsToBill.reduce(
         (total, item) => total + item.product.price * item.quantity,
         0
       );
@@ -259,7 +259,7 @@ export class CartController {
         code: `T-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         purchase_datetime: new Date(),
         purchaser: req.user.email,
-        products: productosParaFacturar.map(item => ({
+        products: productsToBill.map(item => ({
           pid: item.product._id,
           title: item.product.title,
           price: item.product.price,
@@ -269,18 +269,16 @@ export class CartController {
         amount: totalAmount,
       });
 
-      await cartService.updateCart(cid, productosRestantes);
+      await cartService.updateCart(cid, remainingProducts);
 
       return res.status(200).json({
-        message: "Compra realizada exitosamente",
-        products: productosParaFacturar,
-        productsRestantes: productosRestantes,
+        message: "Purchase completed successfully",
+        products: productsToBill,
+        remainingProducts,
         ticket,
       });
     } catch (error) {
-      return res
-        .status(500)
-        .json({ error: "Error inesperado en el servidor", detalle: error.message });
+      return res.status(500).json({ error: "Unexpected server error", detail: error.message });
     }
   };
 }

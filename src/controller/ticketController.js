@@ -1,4 +1,3 @@
-import UserManager from "../dao/UsersDAO.js";
 import { ticketService } from "../services/ticketService.js";
 import { productService } from "../services/productService.js";
 import { isValidObjectId } from "mongoose";
@@ -10,39 +9,39 @@ export class TicketController {
 
     if (!email || !ticket) {
       res.setHeader("Content-Type", "application/json");
-      return res.status(400).json({ error: `Complete los datos` });
+      return res.status(400).json({ error: `Complete the data` });
     }
 
     if (!Array.isArray(ticket)) {
       res.setHeader("Content-Type", "application/json");
-      return res.status(400).json({ error: `El ticket tiene un formato inválido` });
+      return res.status(400).json({ error: `The ticket has an invalid format` });
     }
 
     try {
       const user = await sessionService.getUser({ email });
       if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
+        return res.status(404).json({ message: "User not found" });
       }
 
       let total = 0;
       let error = false;
       let detalleError = [];
 
-      for (const t of ticket) {
-        if (!isValidObjectId(t.pid)) {
+      for (const e of ticket) {
+        if (!isValidObjectId(e.pid)) {
           error = true;
-          detalleError.push(`El producto con id ${t.pid} no es un ID válido de MONGODB`);
+          detalleError.push(`The product with id ${e.pid} is not a valid MONGODB ID`);
           continue;
         }
-        let product = await productService.getProductsBy({ _id: t.pid });
+        let product = await productService.getProductsBy({ _id: e.pid });
         if (product) {
-          t.title = product.title;
-          t.price = product.price;
-          t.subtotal = product.price * t.quantity;
-          total += t.subtotal;
+          e.title = product.title;
+          e.price = product.price;
+          e.subtotal = product.price * e.quantity;
+          total += e.subtotal;
         } else {
           error = true;
-          detalleError.push(`El producto con id ${t.pid} no existe`);
+          detalleError.push(`The product with id ${e.pid} does not exist`);
         }
       }
 
@@ -67,7 +66,7 @@ export class TicketController {
       res.setHeader("Content-Type", "application/json");
       return res
         .status(500)
-        .json({ message: "Error al crear el ticket", detalle: `${error.message}` });
+        .json({ message: "Error creating the ticket", detail: `${error.message}` });
     }
   };
 
