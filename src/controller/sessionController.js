@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import { io } from "../app.js";
 
 export class sessionController {
-  static register = async (req, res) => {
+  static register = async (req, res, next) => {
     const { first_name, last_name, email, age, password } = req.body;
 
     try {
@@ -24,11 +24,11 @@ export class sessionController {
       const newProduct = await sessionService.createUser(newUser);
       return res.redirect("/login");
     } catch (error) {
-      throw error;
+      next(error);
     }
   };
 
-  static login = async (req, res) => {
+  static login = async (req, res, next) => {
     try {
       if (!req.user) {
         return res.redirect("/login");
@@ -65,11 +65,11 @@ export class sessionController {
 
       return res.redirect("/products"), { token, userToken };
     } catch (error) {
-      throw error;
+      next(error);
     }
   };
 
-  static logout = async (req, res) => {
+  static logout = async (req, res, next) => {
     res.clearCookie("coderCookie", { httpOnly: true });
     res.redirect("/login");
   };
@@ -92,7 +92,7 @@ export class sessionController {
       res.cookie("coderCookie", token, { httpOnly: true });
       return res.redirect("/products"), { user: req.user };
     } catch (error) {
-      return res.status(500).json({ error: "Internal Server Error" });
+      next(error);
     }
   };
 }

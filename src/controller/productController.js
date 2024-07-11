@@ -1,6 +1,8 @@
 import { isValidObjectId } from "mongoose";
 import { io } from "../app.js";
 import { productService } from "../services/productService.js";
+import { CustomError } from "../utils/customError.js";
+import { ERROR_TYPES } from "../utils/eErrors.js";
 
 export class ProductController {
   // Función estática para obtener productos con paginación
@@ -122,13 +124,23 @@ export class ProductController {
       }
 
       if (typeof price !== "number" || typeof stock !== "number") {
-        return res.status(400).json({ error: "Price and stock must be numbers" });
+        CustomError.createError(
+          "createProduct from productController",
+          "Enter a valid MongoDB ID",
+          "Price and stock must be numbers",
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       const productExists = await productService.getProductsBy({ code });
 
       if (productExists) {
-        return res.status(400).json({ error: `Error, the code ${code} is repeating` });
+        CustomError.createError(
+          "productExists from cartController",
+          "Enter a valid MongoDB code",
+          `Error, the code ${code} is repeating`,
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       const newProduct = await productService.createProduct({
@@ -145,10 +157,7 @@ export class ProductController {
 
       res.status(201).json(newProduct);
     } catch (error) {
-      res.status(500).json({
-        error: `Unexpected server error`,
-        detalle: `${error.message}`,
-      });
+      next(error);
     }
   };
 
@@ -160,8 +169,12 @@ export class ProductController {
     try {
       // Verifica si el ID proporcionado es válido
       if (!isValidObjectId(id)) {
-        res.setHeader("Content-Type", "application/json");
-        return res.status(400).json({ error: "Enter a valid MONGODB ID" });
+        CustomError.createError(
+          "updateProduct from productController",
+          "Enter a valid MongoDB ID",
+          "ID inválido",
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       res.setHeader("Content-Type", "application/json");
@@ -180,21 +193,25 @@ export class ProductController {
         try {
           exist = await productService.getProductsBy({ code: updateData.code });
           if (exist) {
-            res.setHeader("Content-Type", "application/json");
-            return res
-              .status(400)
-              .json({ error: `Another product with code ${updateData.code} already exists` });
+            CustomError.createError(
+              "updateProduct from productController",
+              "Enter a valid MongoDB code",
+              `Another product with code ${updateData.code} already exists`,
+              ERROR_TYPES.INVALID_ARGUMENTS
+            );
           }
         } catch (error) {
-          res.setHeader("Content-Type", "application/json");
-          return res.status(500).json({
-            error: `${error.message}`,
-          });
+          next(error);
         }
       }
 
       if ((stock !== undefined && isNaN(stock)) || (price !== undefined && isNaN(price))) {
-        return res.status(400).json({ error: "Stock and price must be numbers" });
+        CustomError.createError(
+          "updateProduct from productController",
+          "Enter a valid MongoDB ID",
+          "Stock and price must be numbers",
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       try {
@@ -202,14 +219,15 @@ export class ProductController {
         const productModified = await productService.updateProduct(id, updateData);
         return res.status(200).json(productModified);
       } catch (error) {
-        res.status(300).json({ error: `Error modifying the product` });
+        CustomError.createError(
+          "updateProduct from productController",
+          "Enter a valid MongoDB ID",
+          `Error modifying the product`,
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
     } catch (error) {
-      res.setHeader("Content-Type", "application/json");
-      return res.status(500).json({
-        error: `Unexpected server error`,
-        detalle: `${error.message}`,
-      });
+      next(error);
     }
   };
 
@@ -218,12 +236,22 @@ export class ProductController {
     const productId = req.params.pid;
 
     if (!isValidObjectId(productId)) {
-      return res.status(400).json({ error: "Enter a valid MongoDB ID" });
+      CustomError.createError(
+        "deleteProduct from productController",
+        "Enter a valid MongoDB ID",
+        "ID inválido",
+        ERROR_TYPES.INVALID_ARGUMENTS
+      );
     }
 
     const product = await productService.getProductsBy({ _id: productId });
     if (!product) {
-      return res.status(404).json({ error: `No product found with ID: ${productId}` });
+      CustomError.createError(
+        "deleteProduct from productController",
+        "Enter a valid MongoDB ID",
+        `No product exists with the ID: ${productId}`,
+        ERROR_TYPES.NOT_FOUND
+      );
     }
 
     try {
@@ -233,13 +261,15 @@ export class ProductController {
         io.emit("deleteProduct", products);
         return res.status(200).json({ payload: `Product with id ${productId} has been deleted` });
       } else {
-        return res.status(400).json({ error: `No product found with id ${productId}` });
+        CustomError.createError(
+          "deleteProduct from productController",
+          "Enter a valid MongoDB ID",
+          `No product exists with the ID: ${productId}`,
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
     } catch (error) {
-      return res.status(500).json({
-        error: "Unexpected server error",
-        detail: error.message,
-      });
+      next(error);
     }
   };
 
