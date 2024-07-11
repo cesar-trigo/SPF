@@ -55,7 +55,7 @@ export class ProductController {
   };
 
   // Función estática para manejar la solicitud de obtener productos
-  static getProducts = async (req, res) => {
+  static getProducts = async (req, res, next) => {
     try {
       const baseUrl = req.originalUrl.split("?")[0]; // Obtener la URL base sin los parámetros de consulta
       const { page, limit, sort, ...searchQuery } = req.query; // Obtener parámetros de consulta de la solicitud
@@ -70,19 +70,23 @@ export class ProductController {
       });
       res.status(200).json(products);
     } catch (error) {
-      res.status(500).json({ error: "Error interno del servidor" });
+      next(error);
     }
   };
 
   // Método estático para obtener un producto por indentificador
-  static getProductsBy = async (req, res) => {
+  static getProductsBy = async (req, res, next) => {
     // Obtiene el ID del producto de los parámetros de la solicitud
     let id = req.params.pid;
     // Verifica si el ID proporcionado es válido
     if (!isValidObjectId(id)) {
-      res.setHeader("Content-Type", "application/json");
-      return res.status(400).json({ error: `Enter a valid MONGODB ID` });
-    }
+      CustomError.createError(
+        "getProductsBy from productController",
+        "Enter a valid MongoDB ID",
+        "ID inválido",
+        ERROR_TYPES.INVALID_ARGUMENTS
+      );
+    } //
     try {
       res.setHeader("Content-Type", "application/json");
       // Llama al servicio para obtener el producto por indentificador
@@ -91,20 +95,30 @@ export class ProductController {
       if (product) {
         res.status(200).json(product);
       } else {
-        return res.status(404).json({ error: `No product exists with the ID: ${id}` });
+        CustomError.createError(
+          "getProductsBy from productController",
+          "Enter a valid MongoDB ID",
+          `No product exists with the ID: ${pid}`,
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
     } catch (error) {
-      res.status(500).json({ error: `Unexpected server error`, detail: `${error.message}` });
+      next(error);
     }
   };
 
   // Método estático para crear un nuevo producto
-  static createProduct = async (req, res) => {
+  static createProduct = async (req, res, next) => {
     try {
       const { title, description, price, thumbnail, code, stock, category } = req.body;
 
       if (!title || !description || !price || !thumbnail || !code || !stock || !category) {
-        return res.status(400).json({ error: "All fields are required" });
+        CustomError.createError(
+          "createProduct from productController",
+          "Enter a valid MongoDB ID",
+          "All fields are required",
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       if (typeof price !== "number" || typeof stock !== "number") {
@@ -139,7 +153,7 @@ export class ProductController {
   };
 
   // Método estático para actualizar un producto
-  static updateProduct = async (req, res) => {
+  static updateProduct = async (req, res, next) => {
     // Obtiene el ID del producto de los parámetros de la solicitud
     let id = req.params.pid;
 
@@ -200,7 +214,7 @@ export class ProductController {
   };
 
   // Método estático para eliminar un producto
-  static deleteProduct = async (req, res) => {
+  static deleteProduct = async (req, res, next) => {
     const productId = req.params.pid;
 
     if (!isValidObjectId(productId)) {
@@ -226,6 +240,29 @@ export class ProductController {
         error: "Unexpected server error",
         detail: error.message,
       });
+    }
+  };
+
+  static mock = async (req, res, next) => {
+    try {
+      let products = [],
+        number = 1;
+      for (let i = 0; i < 100; i++) {
+        products.push({
+          productNumber: number++,
+          status: faker.datatype.boolean(0.9),
+          title: faker.commerce.productName(),
+          description: faker.commerce.productDescription(),
+          price: faker.commerce.price({ symbol: "$" }),
+          thumbnail: faker.image.url(),
+          code: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          stock: faker.number.int({ min: 0, max: 100 }),
+          category: faker.commerce.department(),
+        });
+      }
+      return res.status(200).json(products);
+    } catch (error) {
+      next(error);
     }
   };
 }
