@@ -4,6 +4,7 @@ import __dirname from "./utils.js";
 import { engine } from "express-handlebars";
 import { Server } from "socket.io";
 import { config } from "./config/config.js";
+import { logger, middlewareLogger } from "./utils/loggers.js";
 import mongoose from "mongoose";
 import MongoStore from "connect-mongo";
 import cookieParser from "cookie-parser";
@@ -16,6 +17,7 @@ import { router as vistasRouter } from "./routes/vistasRouter.js";
 import { router as cartRouter } from "./routes/cartRouter.js";
 import { router as productRouter } from "./routes/productRouter.js";
 import { router as sessionRouter } from "./routes/sessionRouter.js";
+import { router as loggerRouter } from "./routes/loggerRouter.js";
 import { messageModelo } from "./dao/models/messageModelo.js";
 
 const PORT = config.PORT;
@@ -35,12 +37,14 @@ app.use(cookieParser(config.SECRET_KEY));
 
 initializePassport();
 app.use(passport.initialize());
+app.use(middlewareLogger);
 
 //Rutas
 app.use("/", vistasRouter);
 app.use("/api/product", productRouter);
 app.use("/api/carts", cartRouter);
 app.use("/api/session", sessionRouter);
+app.use("/loggerTest", loggerRouter);
 
 // Middleware para manejo de errores
 app.use(errorHandler);
@@ -67,8 +71,6 @@ let usuarios = [];
 export const io = new Server(server);
 
 io.on("connection", socket => {
-  /*   console.log(`Se conecto el cliente ${socket.id}`); */
-
   socket.on("id", async userName => {
     usuarios[socket.id] = userName;
     let messages = await messageModelo.find();

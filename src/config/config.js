@@ -31,4 +31,5 @@ export const config = {
   SECRET_KEY: process.env.SECRET_KEY,
   CLIENT_ID_GITHUB: process.env.CLIENT_ID_GITHUB,
   CLIENT_SECRET_GITHUB: process.env.CLIENT_SECRET_GITHUB,
+  MODE: process.env.MODE,
 };
