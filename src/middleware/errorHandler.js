@@ -1,7 +1,8 @@
 import { ERROR_TYPES } from "../utils/eErrors.js";
+import { logger } from "../utils/loggers.js";
 
 export const errorHandler = (error, req, res, next) => {
-  console.log(`${error.Msg ? error.Msg : error.message}`);
+  logger.error(`${error.Msg ? error.Msg : error.message}`);
 
   switch (error.code) {
     case ERROR_TYPES.AUTHORIZATION || ERROR_TYPES.AUTHENTICATION:
