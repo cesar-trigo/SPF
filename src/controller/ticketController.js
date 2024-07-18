@@ -2,25 +2,40 @@ import { ticketService } from "../services/ticketService.js";
 import { productService } from "../services/productService.js";
 import { isValidObjectId } from "mongoose";
 import { sessionService } from "../services/sessionsService.js";
+import { ERROR_TYPES } from "../utils/eErrors.js";
+import { CustomError } from "../utils/customError.js";
 
 export class TicketController {
-  static createTicket = async (req, res) => {
+  static createTicket = async (req, res, next) => {
     let { email, ticket } = req.body;
 
     if (!email || !ticket) {
-      res.setHeader("Content-Type", "application/json");
-      return res.status(400).json({ error: `Complete the data` });
+      CustomError.createError(
+        "createTicket from ticketController",
+        "Enter a valid MongoDB ID",
+        "All fields are required",
+        ERROR_TYPES.INVALID_ARGUMENTS
+      );
     }
 
     if (!Array.isArray(ticket)) {
-      res.setHeader("Content-Type", "application/json");
-      return res.status(400).json({ error: `The ticket has an invalid format` });
+      CustomError.createError(
+        "createTicket from ticketController",
+        "Enter a valid MongoDB ID",
+        "The ticket has an invalid format",
+        ERROR_TYPES.INVALID_ARGUMENTS
+      );
     }
 
     try {
       const user = await sessionService.getUser({ email });
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        CustomError.createError(
+          "createTicket from ticketController",
+          "Enter a valid MongoDB code",
+          `User not found`,
+          ERROR_TYPES.NOT_FOUND
+        );
       }
 
       let total = 0;
@@ -46,8 +61,12 @@ export class TicketController {
       }
 
       if (error) {
-        res.setHeader("Content-Type", "application/json");
-        return res.status(400).json({ errors: detalleError });
+        CustomError.createError(
+          "createTicket from ticketController",
+          "Enter a valid MongoDB ID",
+          detalleError,
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       const code = `T-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -63,10 +82,7 @@ export class TicketController {
 
       res.status(201).json(newTicket);
     } catch (error) {
-      res.setHeader("Content-Type", "application/json");
-      return res
-        .status(500)
-        .json({ message: "Error creating the ticket", detail: `${error.message}` });
+      next(error);
     }
   };
 

@@ -2,34 +2,30 @@ import { lookToken } from "../config/passport.js";
 import { cartService } from "../services/cartService.js";
 import { productService } from "../services/productService.js";
 import { UsersDTO } from "../dto/UsersDTO.js";
+import { CustomError } from "../utils/customError.js";
+import { ERROR_TYPES } from "../utils/eErrors.js";
+import { error } from "console";
 
 export class ViewController {
-  static home = async (req, res) => {
+  static home = async (req, res, next) => {
     let products;
     const token = lookToken(req);
     try {
       products = await productService.getProducts();
-    } catch {
-      res.setHeader("Content-Type", "application/json");
-      return res.status(500).json({
-        error: `Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`,
-      });
+    } catch (error) {
+      next(error);
     }
 
     res.setHeader("Content-Type", "text/html");
     res.status(200).render("home", { products, login: token });
   };
 
-  static realTime = async (req, res) => {
+  static realTime = async (req, res, next) => {
     let products;
     try {
       products = await productService.getProducts();
     } catch (error) {
-      console.log(error);
-      res.setHeader("Content-Type", "application/json");
-      return res.status(500).json({
-        error: `Error inesperado en el servidor - Intente más tarde, o contacte a su administrador`,
-      });
+      next(error);
     }
     res.setHeader("Content-Type", "text/html");
     res.status(200).render("realTime", { products, login: req.user });
@@ -59,7 +55,7 @@ export class ViewController {
     };
   };
 
-  static getProducts = async (req, res) => {
+  static getProducts = async (req, res, next) => {
     const cartUser = req.user.cart;
     try {
       /*       let cart = await cartService.getCartById(cartUser);
@@ -107,7 +103,12 @@ export class ViewController {
 
       let requestedPage = parseInt(page);
       if (isNaN(requestedPage)) {
-        return res.status(400).json({ error: "Page must be a number" });
+        CustomError.createError(
+          "getProducts from ViewController",
+          "Page not found",
+          "Page must be a number",
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       if (requestedPage < 1) {
@@ -115,7 +116,12 @@ export class ViewController {
       }
 
       if (requestedPage > products.totalPages) {
-        return res.status(400).json({ error: "Sorry, the site does not have that many pages yet" });
+        CustomError.createError(
+          "getProducts from ViewController",
+          "Page not found",
+          "Sorry, the site does not have that many pages yet",
+          ERROR_TYPES.INVALID_ARGUMENTS
+        );
       }
 
       res.render("products", {
@@ -134,8 +140,7 @@ export class ViewController {
         login: req.user,
       });
     } catch (error) {
-      console.error("Error:", error);
-      res.status(500).json({ error: "Error en el servidor" });
+      next(error);
     }
   };
 
@@ -147,7 +152,12 @@ export class ViewController {
       const plainCart = cart.toObject();
       res.status(200).render("cart", { plainCart, login: req.user });
     } else {
-      res.status(404).json({ error: `Cart not found with id: ${cid}` });
+      CustomError.createError(
+        "getCart from ViewController",
+        "Enter a valid cart id",
+        `Cart not found with id: ${cid}`,
+        ERROR_TYPES.NOT_FOUND
+      );
     }
   };
 

@@ -6,6 +6,7 @@ import passport from "passport";
 export const router = Router();
 
 router.get("/", ProductController.getProducts);
+router.get("/mockingproducts", ProductController.mock);
 router.get("/:pid", ProductController.getProductsBy);
 router.post(
   "/",

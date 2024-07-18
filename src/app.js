@@ -8,7 +8,9 @@ import mongoose from "mongoose";
 import MongoStore from "connect-mongo";
 import cookieParser from "cookie-parser";
 import passport from "passport";
+import compression from "express-compression";
 import { initializePassport } from "./config/passport.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 import { router as vistasRouter } from "./routes/vistasRouter.js";
 import { router as cartRouter } from "./routes/cartRouter.js";
@@ -27,6 +29,7 @@ app.set("views", path.join(__dirname, "/views"));
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(compression({}));
 app.use(express.static(path.join(__dirname, "/public")));
 app.use(cookieParser(config.SECRET_KEY));
 
@@ -38,6 +41,9 @@ app.use("/", vistasRouter);
 app.use("/api/product", productRouter);
 app.use("/api/carts", cartRouter);
 app.use("/api/session", sessionRouter);
+
+// Middleware para manejo de errores
+app.use(errorHandler);
 
 // Conexión a la base de datos
 const connDB = async () => {
