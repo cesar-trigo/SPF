@@ -4,22 +4,24 @@ import path from "path";
 import { config } from "dotenv";
 
 let customLevels = {
-  fatal: 0,
-  error: 1,
-  warning: 2,
-  info: 3,
-  http: 4,
-  debug: 5,
+  debug: 0,
+  http: 1,
+  info: 2,
+  warning: 3,
+  error: 4,
+  fatal: 5,
 };
 
-const customColors = {
-  fatal: "bold inverse red",
-  error: "bold red",
-  warning: "bold yellow",
-  info: "green",
+const colorMap = {
+  debug: "blue",
   http: "cyan",
-  debug: "bold inverse grey",
+  info: "green",
+  warning: "yellow",
+  error: "red",
+  fatal: "magenta",
 };
+
+const customColors = colorMap;
 
 winston.addColors(customColors);
 
@@ -57,18 +59,12 @@ export const loggerDev = winston.createLogger({
   ],
 });
 
-export const logger = winston.createLogger({
-  levels: customLevels,
-  transports: [loggerProd],
-});
+const environment = config.MODE;
 
-const enviroment = config.MODE;
+export const logger = environment === "dev" ? loggerDev : loggerProd;
 
-if (enviroment == "dev") {
-  logger.add(loggerDev);
-}
-
-export const middLogger = (req, res, next) => {
+export const middlewareLogger = (req, res, next) => {
   req.logger = logger;
+  req.logger.http(`${req.method} ${req.url}`);
   next();
 };

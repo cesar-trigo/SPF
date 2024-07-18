@@ -4,7 +4,7 @@ import __dirname from "./utils.js";
 import { engine } from "express-handlebars";
 import { Server } from "socket.io";
 import { config } from "./config/config.js";
-import { logger, middLogger } from "./utils/loggers.js";
+import { logger, middlewareLogger } from "./utils/loggers.js";
 import mongoose from "mongoose";
 import MongoStore from "connect-mongo";
 import cookieParser from "cookie-parser";
@@ -37,7 +37,7 @@ app.use(cookieParser(config.SECRET_KEY));
 
 initializePassport();
 app.use(passport.initialize());
-app.use(middLogger);
+app.use(middlewareLogger);
 
 //Rutas
 app.use("/", vistasRouter);
@@ -71,8 +71,6 @@ let usuarios = [];
 export const io = new Server(server);
 
 io.on("connection", socket => {
-  /*   console.log(`Se conecto el cliente ${socket.id}`); */
-
   socket.on("id", async userName => {
     usuarios[socket.id] = userName;
     let messages = await messageModelo.find();
